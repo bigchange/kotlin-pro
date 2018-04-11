@@ -1,3 +1,9 @@
+
+object Application {
+    fun run() {
+        println("hello world!")
+    }
+}
 fun main(args: Array<String>) {
-    println("hello world!")
+    Application.run()
 }
