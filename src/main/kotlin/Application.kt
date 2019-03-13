@@ -13,6 +13,8 @@ object Application {
         Asiatic("Asiatic").sayHello()
         getZoo() // why can't print out
         functional()
+        extensionFunctions()
+        result()
     }
 }
 
@@ -38,14 +40,14 @@ fun infixfunctions() {
     val myPair = "McLaren" onto "Lucas"
     println(myPair)
 
-    val sophia = Person("Sophia")
-    val claudia = Person("Claudia")
+    val sophia = Person1("Sophia")
+    val claudia = Person1("Claudia")
     sophia likes claudia                                       // 5
 }
 
-class Person(val name: String) {
-    val likedPeople = mutableListOf<Person>()
-    infix fun likes(other: Person) { likedPeople.add(other) }  // 6
+class Person1(val name: String) {
+    val likedPeople = mutableListOf<Person1>()
+    infix fun likes(other: Person1) { likedPeople.add(other) }  // 6
 }
 
 fun describeString(maybeString: String?): String {
@@ -291,7 +293,7 @@ fun higherOrderFunction() {
 }
 
 fun operation(): (Int) -> Int {                                     // 1
-    return :: square
+    return ::square
 }
 
 fun operation2(x:Int, oper:(Int) -> Int) :  Int {                                     // 1
@@ -306,3 +308,142 @@ fun functional() {
     println(func(2))  // 4
     println(func2)
 }
+
+fun lambda() {
+    // All examples create a function object that performs upper-casing.
+    // So it's a function from String to String
+
+    val upperCase1: (String) -> String = { str: String -> str.toUpperCase() } // 1
+
+    val upperCase2: (String) -> String = { str -> str.toUpperCase() }         // 2
+
+    val upperCase3 = { str: String -> str.toUpperCase() }                     // 3
+
+    // val upperCase4 = { str -> str.toUpperCase() }     // wrong             // 4
+
+    val upperCase5: (String) -> String = { it.toUpperCase() }                 // 5
+
+    val upperCase6: (String) -> String = String::toUpperCase                 // 6
+
+    println(upperCase2("hello"))
+    println(upperCase1("hello"))
+    println(upperCase3("hello"))
+    println(upperCase5("hello"))
+    println(upperCase6("hello"))
+}
+
+// extension functions
+
+data class Item(val name: String, val price: Float)                                   // 1
+
+data class Order(val items: Collection<Item>) {
+    fun maxPricedItemValue() :Float {
+        return items.maxBy { it.price }?.price?:0F
+    }
+}
+
+// fun Order.maxPricedItemValue(): Float = this.items.maxBy { it.price }?.price ?: 0F    // 2
+fun Order.maxPricedItemName() = this.items.maxBy { it.price }?.name ?: "NO_PRODUCTS"
+
+// extension properties
+val Order.commaDelimitedItemNames: String
+    get() = this.items.map { it.name }.joinToString()
+
+fun extensionFunctions() {
+    val order = Order(listOf(Item("Bread", 25.0F), Item("Wine", 29.0F), Item("Water", 12.0F)))
+
+    println("Max priced item name: ${order.maxPricedItemName()}")                     // 4
+    println("Max priced item value: ${order.maxPricedItemValue()}")
+    println("Items: ${order.commaDelimitedItemNames}")                                // 5
+
+}
+
+// check null code
+fun <T> T?.nullSafeToString() = this?.toString() ?: "NULL"
+
+// Collections
+// List
+val systemUsers: MutableList<Int> = mutableListOf(1, 2, 3)  // mutable
+val sudoers: List<Int> = systemUsers   // read-only
+
+// Set
+// Map
+// 1 -> 100, 2 -> 100, 3 -> 100
+val EZPassAccounts: MutableMap<Int, Int> = mutableMapOf(1 to 100, 2 to 100, 3 to 100)
+val EZPassReport: Map<Int, Int> = EZPassAccounts
+
+// filter, map
+
+// any, all, none
+
+val numbers = listOf(1, -2, 3, -4, 5, -6)            // 1
+
+val anyNegative = numbers.any { it < 0 }             // 2
+
+val anyGT6 = numbers.any { it > 6 }                  // 3
+
+
+// find, findLast， first, last, firstOrNull, lastOrNull
+
+// count
+
+// associateBy, groupBy - keySelector, valueSelector
+
+// The difference between associateBy and groupBy is how they process objects with the same key:
+// associateBy uses the last suitable element as the value. groupBy builds a list of all suitable
+// elements and puts it in the value.
+
+data class Person(val name: String, val city: String, val phone: String) // 1
+
+val people = listOf(                                                     // 2
+        Person("John", "Boston", "+1-888-123456"),
+        Person("Sarah", "Munich", "+49-777-789123"),
+        Person("Svyatoslav", "Saint-Petersburg", "+7-999-456789"),
+        Person("Vasilisa", "Saint-Petersburg", "+7-999-456789"))
+
+val phoneBook = people.associateBy { it.phone }
+// keySelector - phone, valueSelector - city
+val cityBook = people.associateBy(Person::phone, Person::city)           // 4
+val peopleCities = people.groupBy(Person::city, Person::name)
+
+fun result() {
+    println("People: $people")
+    println("Phone book: $phoneBook")
+    println("City book: $cityBook")
+    println("People living in each city: $peopleCities")
+
+}
+
+
+// partition
+
+// flatMap, min, max, sorted , sortedBy
+
+
+// map element access
+
+fun accessMap() {val map = mapOf("key" to 42)
+
+    val value1 = map["key"]                                     // 1
+    val value2 = map["key2"]                                    // 2
+
+    val value3: Int = map.getValue("key")                       // 1
+
+    val mapWithDefault = map.withDefault { k -> k.length }
+    val value4 = mapWithDefault.getValue("key2")                // 3
+
+    try {
+        map.getValue("anotherKey")                              // 4
+    }
+    catch (e: NoSuchElementException) {
+        println("Message: $e")
+    }
+}
+
+// zip: zip function merges two given collections into a new collection. By default, the result collection contains Pairs of source collection elements with the same index
+
+// getOrElse
+
+val list = listOf(0, 10, 20)
+println(list.getOrElse(1) { 42 })    // 1
+println(list.getOrElse(10) { 42 })   // 2
