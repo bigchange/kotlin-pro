@@ -1,3 +1,5 @@
+import kotlin.properties.Delegates
+import kotlin.reflect.KProperty
 
 object Application {
     fun run() {
@@ -15,6 +17,8 @@ object Application {
         functional()
         extensionFunctions()
         result()
+        applyAndAlso()
+        LazySample().ifChange()
     }
 }
 
@@ -444,6 +448,179 @@ fun accessMap() {val map = mapOf("key" to 42)
 
 // getOrElse
 
-val list = listOf(0, 10, 20)
-println(list.getOrElse(1) { 42 })    // 1
-println(list.getOrElse(10) { 42 })   // 2
+fun getOrElse() {
+    val list = listOf(0, 10, 20)
+    println(list.getOrElse(1) { 42 })
+    println(list.getOrElse(10) { 42 })
+
+    val map = mutableMapOf<String, Int?>()
+    println(map.getOrElse("x") { 1 })    // 1
+
+    map["x"] = 3
+    println(map.getOrElse("x") { 1 })     // 3
+
+    map["x"] = null
+    println(map.getOrElse("x") { 1 })   // 1
+}
+
+
+// scope function
+// let, run , with , apply, also
+
+fun printNonNull(str: String?) {
+    println("Printing \"$str\":")
+
+    str?.let {                         // 4
+        println("str is not null = ${it.length}")
+    }
+}
+
+// The difference between let is that inside run the object is accessed by this not it
+fun getNullableLength(ns: String?) {
+    println("for \"$ns\":")
+    ns?.run {                                                  // 1
+        println("\tis empty? " + isEmpty())                    // 2
+        println("\tlength = ${this.length}")
+        length                                                 // 3
+    }
+}
+
+class Configuration(var host: String, var port: Int)
+
+fun withFunction() {
+    val configuration = Configuration(host = "127.0.0.1", port = 9000)
+
+    with(configuration) {
+        println("$host:$port")
+    }
+
+    // instead of:
+    println("${configuration.host}:${configuration.port}")
+}
+
+data class People(var name: String, var age: Int, var about: String) {
+    constructor() : this("", 0, "")
+}
+
+fun applyAndAlso() {
+    val jake = People()                                     // 1
+    val stringDescription = jake.apply {                    // 2
+        this.name = "Jake"                                       // 3
+        age = 30
+        about = "Android developer"
+    }.toString()                                            // 4
+    println(stringDescription)
+
+    jake.also {
+        it.name = "jake-new"
+    }
+    println(jake.toString())
+}
+
+
+// Delegation Pattern (委派模式)
+interface SoundBehavior {                                                          // 1
+    fun makeSound()
+}
+
+class ScreamBehavior(val n:String): SoundBehavior {                                // 2
+    override fun makeSound() = println("${n.toUpperCase()} !!!")
+}
+
+class RockAndRollBehavior(val n:String): SoundBehavior {                           // 2
+    override fun makeSound() = println("I'm The King of Rock 'N' Roll: $n")
+}
+
+// Tom Araya is the "singer" of Slayer
+class TomAraya(n:String): SoundBehavior by ScreamBehavior(n)                       // 3
+
+// You should know ;)
+class ElvisPresley(n:String): SoundBehavior by RockAndRollBehavior(n)              // 3
+
+
+//Delegated Properties
+class Example {
+    var p: String by Delegate()                                               // 1
+
+    override fun toString() = "Example Class"
+}
+
+class Delegate() {
+    operator fun getValue(thisRef: Any?, prop: KProperty<*>): String {        // 2
+        return "$thisRef, thank you for delegating '${prop.name}' to me!"
+    }
+
+    operator fun setValue(thisRef: Any?, prop: KProperty<*>, value: String) { // 2
+        println("$value has been assigned to ${prop.name} in $thisRef")
+    }
+}
+
+// lazy observable
+class LazySample {
+    init {
+        println("created!")            // 1
+    }
+
+    val lazyStr: String by lazy {
+        println("computed!")          // 2
+        "my lazy"
+    }
+    var observed = false
+    var watch:String by Delegates.observable("you", { p, ol, nv ->
+        observed = true
+    })
+
+    fun ifChange() {
+        println(watch) // ""
+        println("observed is ${observed}") // false
+        watch = "i am changed"
+        println(watch) // i am changed
+        println("observed is ${observed}") // true
+    }
+
+}
+
+// Productivity Boosters
+
+// Named Arguments, String Templates,  Destructuring Declarations
+fun format(userName: String, domain: String) = "$userName@$domain"
+
+fun poductivityBoosters() {
+    // Named Arguments
+    println(format(userName = "foo", domain = "bar.com"))
+    println(format(domain = "frog.com", userName = "pepe"))
+    // String Templates
+    val greeting = "Kotliner"
+    println("Hello $greeting")                  // 1
+    println("Hello ${greeting.toUpperCase()}")  // 2
+}
+
+
+data class UserClass(val username: String, val email: String)    // 1
+
+fun getUser() = UserClass("Mary", "mary@somewhere.com")
+
+fun getUserClass() {
+    val user = getUser()
+    val (username, email) = user                            // 2
+    println(username == user.component1())                  // 3
+    val (_, emailAddress) = getUser()                       // 4
+
+}
+
+class Pair<K, V>(val first: K, val second: V) {  // 1
+    operator fun component1(): K {
+        return first
+    }
+    operator fun component2(): V {
+        return second
+    }
+}
+
+fun pair() {
+    val (num, name) = Pair(1, "one")             // 2
+
+    println("num = $num, name = $name")
+}
+
+// finished guide of kotlin
